@@ -1,11 +1,53 @@
 using LinearAlgebra
 
-
+# sparse Matrix struct
 struct spMatrix
-    p
-    i
-    x
+    p;
+    i;
+    x;
+
+    function spMatrix(p, i, x)
+        p = convert(AbstractArray{Int, 1}, p)
+        i = convert(AbstractArray{Int, 1}, i)
+        x = convert(AbstractArray{Float64, 1}, x)
+        new(p, i, x)
+    end
 end
+
+
+# convert from sparse to dense
+function sparse2dense(X)
+    n = length(X.p)-1;
+    k = maximum(X.i);
+    Y = zeros(k, n);
+    for i in 1:n
+
+        alpha_lower = X.p[i]+1;
+        alpha_upper = X.p[i+1];
+
+        if alpha_lower > alpha_upper
+            continue
+        end
+
+        if alpha_upper > size(X.i, 1)
+            alpha_upper = alpha_lower
+        end
+
+        #range=(X.p[i]+1):X.p[i+1]
+        for j in collect(alpha_lower:alpha_upper);
+
+            Y[X.i[j], i] = X.x[j]
+        end
+    end
+    return Y
+end
+
+# convert from dense to sparse
+function dense2sparse()
+
+end
+
+
 
 # Algorithm 2.1 - sparse matrix time dense vector
 function spM_x_deV(A, x)
@@ -23,23 +65,18 @@ end
 
 A = spMatrix([0, 2, 4, 5], [1, 3, 1, 2, 3], [4.6, 3.0, 2.3, 1.5, 2.7])
 x = [1; 3; 5]
-sparseM_times_denseVA,x) == [4.6 2.3 0; 0 1.5 0; 3.0 0 2.7] * x
-
-
-
-
+@show spM_x_deV(A,x) == sparse2dense(A)*x;
 
 
 # Algorithm 2.2 - sparse matrix times sparse matrix
-
 function spM_x_spM(A::spMatrix, B::spMatrix)
-    n = size(B.p, 1) - 1; #maximum([maximum(A.i), maximum(B.i)])
-    C = zeros(n, n);
-    w = zeros(6);
+    n = (size(B.p, 1) - 1)::Int; #maximum([maximum(A.i), maximum(B.i)])
+    #C = zeros(n, n)::AbstractArray{Float64, 2};
+    w = zeros(6)::AbstractArray{Float64, 1};
     Cj = Vector{Int64}();
-    Cp = zeros(n);
+    Cp = zeros(n)::AbstractArray{Float64, 1};
     Cx = [];
-    x = zeros(n);
+    x = zeros(n)::AbstractArray{Float64, 1};
 
     for j in 1:n
 
@@ -94,13 +131,14 @@ function spM_x_spM(A::spMatrix, B::spMatrix)
 end
 
 A = spMatrix([0, 1, 2, 2, 4, 5, 7], [1, 2, 1, 3, 1, 3], [1, 8, 4, 16, 5, 18])
-B = spMatrix([0, 2, 4, 5], [3, 4, 1, 5, 6], [7, 10, 2, 14, 18])
+B = spMatrix([0, 2, 4, 5], [3, 4.0, 1, 5, 6], [7, 10.0, 2, 14, 18])
 C = spM_x_spM(A,B);
 
-Juno.@enter spM_x_spM(A,B);
+@show sparse2dense(A)*sparse2dense(B) == sparse2dense(C);
 
 
 
-Adense = [1 0 0 4 5 0; 0 8 0 0 0 0; 0 0 0 16 0 18];
-Bdense = [0 2 0; 0 0 0; 7 0 0; 10 0 0; 0 14 0; 0 0 18];
-Adense*Bdense
+# timing
+
+A = randn(100, 100);
+B = randn(100, 100);
